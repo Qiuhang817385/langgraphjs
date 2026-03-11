@@ -1,0 +1,71 @@
+# 如何添加自定义路由
+
+在 LangGraph 平台上部署代理时，你的服务器会自动暴露用于创建 runs 和 threads、与长期记忆 store 交互、管理可配置的 assistants 以及其他核心功能的路由（[查看所有默认 API 端点](https://langchain-ai.github.io/langgraph/cloud/reference/api/api_ref.html)）。
+
+你可以通过提供自己的 [`Hono`](https://hono.dev/) 应用来添加自定义路由。你可以通过在你的 `langgraph.json` 配置文件中提供指向应用的路径来让 LangGraph Platform 知道这一点。（`"http": {"app": "path/to/app.ts:app"}`）。
+
+定义自定义应用对象允许你添加任何你想要的路由，因此你可以做任何事情，从添加 `/login` 端点到编写整个全栈 web 应用，所有这些都在单个 LangGraph 部署中部署。
+
+## 创建应用
+
+从**现有的** LangGraph Platform 应用开始，将以下自定义路由代码添加到你的 `app.ts` 文件中。如果你是从头开始，可以使用 CLI 从模板创建新应用。
+
+```bash
+npm create langgraph
+```
+
+确保安装 `hono` 作为依赖项。
+
+```bash
+npm install hono
+```
+
+一旦你有了 LangGraph 项目，添加以下应用代码：
+
+```typescript
+// ./src/agent/app.ts
+import { Hono } from "hono";
+
+export const app = new Hono();
+
+app.get("/hello", (c) => c.json({ hello: "world" }));
+```
+
+## 配置 `langgraph.json`
+
+将以下内容添加到你的 `langgraph.json` 文件中。确保路径指向你上面创建的 `app.py` 文件。
+
+```json
+{
+  "graphs": {
+    "agent": "./src/agent/graph.ts:graph"
+  },
+  "env": ".env",
+  "http": {
+    "app": "./src/agent/app.ts:app"
+  }
+  // 其他配置选项如 auth、store 等。
+}
+```
+
+## 启动服务器
+
+在本地测试服务器：
+
+```bash
+npx langgraph-cli@latest dev --no-browser
+```
+
+如果你在浏览器中导航到 `localhost:2024/hello`（2024 是默认的开发端口），你应该会看到 `hello` 端点返回 `{"hello": "world"}`。
+
+!!! note "覆盖默认端点"
+
+    你在应用中创建的路由优先于系统默认值，这意味着你可以覆盖和重新定义任何默认端点的行为。
+
+## 部署
+
+你可以按原样将此应用部署到托管的 LangGraph Cloud 或你的自托管平台。
+
+## 下一步
+
+既然你已经向部署添加了自定义路由，你可以使用相同的技术进一步自定义服务器的行为，例如定义[自定义中间件](./custom_middleware.md)。

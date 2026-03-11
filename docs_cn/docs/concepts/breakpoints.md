@@ -1,0 +1,144 @@
+# 断点
+
+断点在特定点暂停图执行，并允许逐步执行。断点由 LangGraph 的[**持久层**](./persistence.md)提供支持，该层在每个图步骤后保存状态。断点还可用于启用[**人机协同**](./human_in_the_loop.md)工作流，但我们建议为此目的使用 [`interrupt` 函数](./human_in_the_loop.md#interrupt)。
+
+## 要求
+
+要使用断点，你需要：
+
+1. [**指定 checkpointer**](persistence.md#checkpoints) 以在每个步骤后保存图状态。
+
+2. [**设置断点**](#setting-breakpoints) 以指定执行应在何处暂停。
+
+3. 使用 [**thread ID**](./persistence.md#threads) **运行图** 以在断点处暂停执行。
+
+4. 使用 `invoke`/`stream` 恢复执行（参见 [**`Command` 原语**](./human_in_the_loop.md#the-command-primitive)）。
+
+## 设置断点
+
+你可以在两个地方设置断点：
+
+1. 在节点执行**之前**或**之后**通过**编译时**或**运行时**设置断点。我们称这些为[**静态断点**](#static-breakpoints)。
+
+2. 在节点内部使用 [`NodeInterrupt` 错误](#nodeinterrupt-error)。
+
+### 静态断点
+
+静态断点在节点执行**之前**或**之后**触发。你可以在**"编译"时**或**运行时**通过指定 `interruptBefore` 和 `interruptAfter` 来设置静态断点。
+
+=== "编译时"
+
+    ```typescript
+    const graph = graphBuilder.compile({
+        interruptBefore: ["nodeA"],
+        interruptAfter: ["nodeB", "nodeC"],
+        checkpointer: ..., // 指定 checkpointer
+    });
+
+    const threadConfig = {
+        configurable: {
+            thread_id: "someThread"
+        }
+    };
+
+    // 运行图直到断点
+    await graph.invoke(inputs, threadConfig);
+
+    // 可选地根据用户输入更新图状态
+    await graph.updateState(update, threadConfig);
+
+    // 恢复图执行
+    await graph.invoke(null, threadConfig);
+    ```
+
+=== "运行时"
+
+    ```typescript
+    await graph.invoke(
+        inputs,
+        { 
+            configurable: { thread_id: "someThread" },
+            interruptBefore: ["nodeA"],
+            interruptAfter: ["nodeB", "nodeC"]
+        }
+    );
+
+    const threadConfig = {
+        configurable: {
+            thread_id: "someThread"
+        }
+    };
+
+    // 运行图直到断点
+    await graph.invoke(inputs, threadConfig);
+
+    // 可选地根据用户输入更新图状态
+    await graph.updateState(update, threadConfig);
+
+    // 恢复图执行
+    await graph.invoke(null, threadConfig);
+    ```
+
+    !!! note
+
+        你不能在运行时对**子图**设置静态断点。
+
+        如果你有子图，你必须在编译时设置断点。
+
+如果你想逐节点逐步执行图，或想在特定节点暂停图执行，静态断点对于调试特别有用。
+
+### `NodeInterrupt` 错误
+
+我们建议你在尝试实现 [人机协同](./human_in_the_loop.md) 工作流时[**使用 `interrupt` 函数**](#the-interrupt-function)而不是 `NodeInterrupt` 错误。`interrupt` 函数更易于使用且更灵活。
+
+??? node "`NodeInterrupt` 错误"
+
+    开发人员可以定义触发断点必须满足的*条件*。当开发人员希望在*特定条件*下停止图时，这种[动态断点](./low_level.md#dynamic-breakpoints)的概念非常有用。这使用 `NodeInterrupt`，这是一种特殊类型的错误，可以根据某个条件从节点内部抛出。例如，我们可以定义一个当 `input` 长度大于 5 个字符时触发的动态断点。
+
+    ```typescript
+    function myNode(state: typeof GraphAnnotation.State) {
+        if (state.input.length > 5) {
+            throw new NodeInterrupt(`Received input that is longer than 5 characters: ${state.input}`);
+        }
+        return state;
+    }
+    ```
+
+    假设我们使用触发动态断点的输入运行图，然后尝试通过为输入传递 `null` 来简单地恢复图执行。
+
+    ```typescript
+    // 在击中动态断点后尝试继续图执行，不改变状态
+    for await (const event of await graph.stream(null, threadConfig)) {
+        console.log(event);
+    }
+    ```
+
+    图将*中断*，因为这个节点将使用相同的图状态*重新运行*。我们需要更改图状态，使其不再满足触发动态断点的条件。因此，我们可以简单地将图状态编辑为满足动态断点条件的输入（< 5 个字符）并重新运行节点。
+
+    ```typescript
+    // 更新状态以通过动态断点
+    await graph.updateState({ input: "foo" }, threadConfig);
+
+    for await (const event of await graph.stream(null, threadConfig)) {
+        console.log(event);
+    }
+    ```
+
+    或者，如果我们想保留当前输入并跳过执行检查的节点 (`myNode`) 怎么办？为此，我们可以简单地使用 `"myNode"`（节点名称）作为第三个位置参数执行图更新，并为值传递 `null`。这不会对图状态进行任何更新，但会作为 `myNode` 运行更新，有效地跳过该节点并绕过动态断点。
+
+    ```typescript
+    // 此更新将完全跳过节点 `myNode`
+    await graph.updateState(null, threadConfig, "myNode");
+
+    for await (const event of await graph.stream(null, threadConfig)) {
+        console.log(event);
+    }
+    ```
+
+## 其他资源 📚
+
+- [**概念指南：持久化**](persistence.md)：阅读持久化指南以获取更多关于持久化的上下文。
+
+- [**概念指南：人机协同**](human_in_the_loop.md)：阅读人机协同指南以获取更多关于使用断点将人工反馈集成到 LangGraph 应用程序中的上下文。
+
+- [**如何查看和更新过去的图状态**](/langgraphjs/how-tos/time-travel)：使用图状态的分步说明，演示**重放**和**分叉**操作。

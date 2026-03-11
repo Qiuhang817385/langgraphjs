@@ -1,0 +1,10 @@
+# 错误参考
+
+本页面包含有关解决在使用 LangChain 构建时可能遇到的常见错误的指南。
+下面引用的错误在代码中抛出时将包含一个 `lc_error_code` 属性，对应于以下代码之一。
+
+- [GRAPH_RECURSION_LIMIT](/langgraphjs/troubleshooting/errors/GRAPH_RECURSION_LIMIT)
+- [INVALID_CONCURRENT_GRAPH_UPDATE](/langgraphjs/troubleshooting/errors/INVALID_CONCURRENT_GRAPH_UPDATE)
+- [INVALID_GRAPH_NODE_RETURN_VALUE](/langgraphjs/troubleshooting/errors/INVALID_GRAPH_NODE_RETURN_VALUE)
+- [MULTIPLE_SUBGRAPHS](/langgraphjs/troubleshooting/errors/MULTIPLE_SUBGRAPHS)
+- [UNREACHABLE_NODE](/langgraphjs/troubleshooting/errors/UNREACHABLE_NODE)

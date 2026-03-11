@@ -1,0 +1,239 @@
+# 记忆
+
+LangGraph 支持构建对话式智能体所需的两种基本记忆类型：
+
+- **[短期记忆](#short-term-memory)**：在会话中跟踪正在进行的对话，维护消息历史。
+- **[长期记忆](#long-term-memory)**：跨会话存储用户特定或应用级别的数据。
+
+本指南演示如何在 LangGraph 中使用这两种记忆类型与智能体。有关记忆概念的深入理解，请参阅 [LangGraph 记忆文档](../concepts/memory.md)。
+
+<figure markdown="1">
+![image](./assets/memory.png){: style="max-height:400px"}
+<figcaption><strong>短期</strong>和<strong>长期</strong>记忆都需要持久化存储来维护跨 LLM 交互的连续性。在生产环境中，这些数据通常存储在数据库中。</figcaption>
+</figure>
+
+!!! note "术语"
+
+    在 LangGraph 中：
+
+    - *短期记忆* 也被称为 **线程级记忆**。
+    - *长期记忆* 也被称为 **跨线程记忆**。
+
+    [线程](../concepts/persistence.md#threads) 表示由相同 `thread_id` 分组的一系列相关运行。
+
+## 短期记忆
+
+短期记忆使智能体能够跟踪多轮对话。要使用它，您必须：
+
+1. 在创建智能体时提供 `checkpointer`。`checkpointer` 启用智能体状态的[持久化](../concepts/persistence.md)。
+2. 在运行智能体时在配置中提供 `thread_id`。`thread_id` 是会话的唯一标识符。
+
+```ts
+// highlight-next-line
+import { MemorySaver } from "@langchain/langgraph-checkpoint";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { initChatModel } from "langchain/chat_models/universal";
+import { tool } from "@langchain/core/tools";
+import { z } from "zod";
+
+// highlight-next-line
+const checkpointer = new MemorySaver();  // (1)!
+
+const getWeather = tool(
+  async (input: { city: string }) => {
+    return `It's always sunny in ${input.city}!`;
+  },
+  {
+    name: "getWeather",
+    schema: z.object({
+      city: z.string().describe("The city to get the weather for"),
+    }),
+    description: "Get weather for a given city.",
+  }
+);
+
+const llm = await initChatModel("anthropic:claude-3-7-sonnet-latest");
+const agent = createReactAgent({
+  llm,
+  tools: [getWeather],
+  // highlight-next-line
+  checkpointer  // (2)!
+});
+
+// Run the agent
+// highlight-next-line
+const config = { configurable: { thread_id: "1" } };  // (3)!
+const sfResponse = await agent.invoke(
+  { messages: [ { role: "user", content: "what is the weather in sf" } ] },
+  config  // (4)!
+);
+const nyResponse = await agent.invoke(
+  { messages: [ { role: "user", content: "what about new york?" } ] },
+  config
+);
+```
+
+1. `MemorySaver` 是一个在内存中存储智能体状态的检查点器。在生产环境中，您通常会使用数据库或其他持久化存储。请查看 [checkpointer 文档](https://langchain-ai.github.io/langgraphjs/reference/index.html) 以获取更多选项。如果您使用 **LangGraph Platform** 部署，平台将为您提供生产就绪的检查点器。
+2. `checkpointer` 被传递给智能体。这使智能体能够在调用之间持久化其状态。请注意
+3. 在配置中提供唯一的 `thread_id`。此 ID 用于标识会话。该值由用户控制，可以是任何字符串。
+4. 智能体将使用相同的 `thread_id` 继续对话。这将允许智能体推断用户具体询问的是纽约的**天气**。
+
+当使用相同的 `thread_id` 第二次调用智能体时，第一次对话的原始消息历史会自动包含，使智能体能够推断用户具体询问的是纽约的**天气**。
+
+!!! 注意 "LangGraph Platform 提供生产就绪的 checkpointer"
+
+    如果您使用 [LangGraph Platform](./deployment.md)，在部署期间，您的检查点器将自动配置为使用生产就绪的数据库。
+
+## 长期记忆
+
+使用长期记忆来存储跨会话的用户特定或应用特定数据。这对于聊天机器人等应用很有用，在这些应用中，您希望记住用户偏好或其他信息。
+
+要使用长期记忆，您需要：
+
+1. [配置存储](../how-tos/cross-thread-persistence.ipynb) 以在调用之间持久化数据。
+2. 使用 `config.store` 从工具或提示词访问存储。
+
+### 读取
+
+```ts title="智能体可用于查找用户信息的工具"
+import { initChatModel } from "langchain/chat_models/universal";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+// highlight-next-line
+import { InMemoryStore } from "@langchain/langgraph-checkpoint";
+// highlight-next-line
+import { getStore } from "@langchain/langgraph";
+import { LangGraphRunnableConfig } from "@langchain/langgraph";
+import { tool } from "@langchain/core/tools";
+import { z } from "zod";
+
+const store = new InMemoryStore(); // (1)!
+
+await store.put(  // (2)!
+  ["users"],  // (3)!
+  "user_123",  // (4)!
+  {
+    name: "John Smith",
+    language: "English",
+  } // (5)!
+);
+
+// 查找用户信息的工具
+const getUserInfo = tool(
+  async (input: Record<string, any>, config: LangGraphRunnableConfig): Promise<string> => {
+    // 与提供给 `createReactAgent` 的相同
+    const store = config.store; // (6)!
+    if (!store) {
+      throw new Error("store is required when compiling the graph");
+    }
+
+    const userId = config.configurable?.userId;
+    if (!userId) {
+      throw new Error("userId is required in the config");
+    }
+
+    const userInfo = await store.get(["users"], userId); // (7)!
+    return userInfo ? JSON.stringify(userInfo.value) : "Unknown user";
+  },
+  {
+    name: "get_user_info",
+    description: "Look up user info.",
+    schema: z.object({}),
+  }
+);
+
+const llm = await initChatModel("anthropic:claude-3-7-sonnet-latest");
+const agent = createReactAgent({
+  llm,
+  tools: [getUserInfo],
+  store, // (8)!
+});
+
+// Run the agent
+const response = await agent.invoke(
+  { messages: [ { role: "user", content: "look up user information" } ] },
+  { configurable: { userId: "user_123" } }
+);
+```
+
+1. `InMemoryStore` 是一个在内存中存储数据的存储。在生产环境中，您通常会使用数据库或其他持久化存储。请查看 [文档](https://langchain-ai.github.io/langgraphjs/reference/index.html) 以获取更多选项。如果您使用 **LangGraph Platform** 部署，平台将为您提供生产就绪的存储。
+2. 对于本示例，我们使用 `put` 方法将一些示例数据写入存储。有关更多详细信息，请参阅 [BaseStore.put](https://langchain-ai.github.io/langgraphjs/reference/classes/checkpoint.BaseStore.html#put) API 参考。
+3. 第一个参数是命名空间。这用于将相关数据分组在一起。在本例中，我们使用 `users` 命名空间来分组用户数据。
+4. 命名空间中的键。本示例使用用户 ID 作为键。
+5. 我们要为给定用户存储的数据。
+6. 您可以通过 `config.store` 从节点、工具和提示词中的任何地方访问存储。它包含创建智能体时传递给智能体的存储。
+7. `get` 方法用于从存储中检索数据。第一个参数是命名空间，第二个参数是键。这将返回一个 `StoreValue` 对象，其中包含值和有关值的元数据。
+8. `store` 被传递给智能体。这使智能体在运行工具时能够访问存储。
+
+### 写入
+
+```ts title="更新用户信息的工具示例"
+import { initChatModel } from "langchain/chat_models/universal";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { InMemoryStore } from "@langchain/langgraph-checkpoint";
+import { getStore } from "@langchain/langgraph";
+import { LangGraphRunnableConfig } from "@langchain/langgraph";
+import { tool } from "@langchain/core/tools";
+import { z } from "zod";
+
+const store = new InMemoryStore(); // (1)!
+
+interface UserInfo { // (2)!
+  name: string;
+}
+
+// 保存用户信息的工具
+const saveUserInfo = tool(  // (3)!
+  async (input: UserInfo, config: LangGraphRunnableConfig): Promise<string> => {
+    // 与提供给 `createReactAgent` 的相同
+    // highlight-next-line
+    const store = config.store; // (4)!
+    if (!store) {
+      throw new Error("store is required when compiling the graph");
+    }
+
+    const userId = config.configurable?.userId;
+    if (!userId) {
+      throw new Error("userId is required in the config");
+    }
+
+    await store.put(["users"], userId, input); // (5)!
+    return "Successfully saved user info.";
+  },
+  {
+    name: "save_user_info",
+    description: "Save user info.",
+    schema: z.object({
+      name: z.string(),
+    }),
+  }
+);
+
+const llm = await initChatModel("anthropic:claude-3-7-sonnet-latest");
+const agent = createReactAgent({
+  llm,
+  tools: [saveUserInfo],
+  // highlight-next-line
+  store,
+});
+
+// Run the agent
+await agent.invoke(
+  { messages: [ { role: "user", content: "My name is John Smith" } ] },
+  { configurable: { userId: "user_123" } } // (6)!
+);
+
+// 您可以直接访问存储以获取值
+const userInfo = await store.get(["users"], "user_123")
+userInfo.value
+```
+
+1. `InMemoryStore` 是一个在内存中存储数据的存储。在生产环境中，您通常会使用数据库或其他持久化存储。请查看 [store 文档](../reference/stores.md) 以获取更多选项。如果您使用 **LangGraph Platform** 部署，平台将为您提供生产就绪的存储。
+2. `UserInfo` 类是一个定义用户信息结构的接口。我们将在下面使用 zod 对象指定相同的模式，以便 LLM 根据该模式格式化响应。
+3. `saveUserInfo` 是一个允许智能体更新用户信息的工具。这对于用户想要更新其个人资料信息的聊天应用可能很有用。
+4. 您可以通过 `config.store` 从节点、工具和提示词中的任何地方访问存储。它包含创建智能体时传递给智能体的存储。
+5. `put` 方法用于在存储中存储数据。第一个参数是命名空间，第二个参数是键。这将在存储中存储用户信息。
+6. `userId` 在配置中传递。这用于标识正在更新其信息的用户。
+
+## 其他资源
+
+* [LangGraph 中的记忆](../concepts/memory.md)

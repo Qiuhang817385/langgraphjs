@@ -1,0 +1,39 @@
+# LangGraph Platform 计划
+
+
+## 概述
+LangGraph Platform 是一个用于在生产环境中部署 agentic 应用程序的商业解决方案。
+有三种不同的使用计划。
+
+- **开发者版**：所有 [LangSmith](https://smith.langchain.com/) 用户都可以访问此计划。你可以通过创建 LangSmith 帐户来注册此计划。这使你可以访问 [自托管精简版](./deployment_options.md#self-hosted-lite) 部署选项。
+- **增强版**：所有具有[增强版帐户](https://docs.smith.langchain.com/administration/pricing)的 [LangSmith](https://smith.langchain.com/) 用户都可以访问此计划。你可以通过将你的 LangSmith 帐户升级到增强版计划类型来注册此计划。这使你可以访问 [云](./deployment_options.md#cloud-saas) 部署选项。
+- **企业版**：这与 LangSmith 计划分开。你可以通过[联系我们的销售团队](https://www.langchain.com/contact-sales)来注册此计划。这使你可以访问所有部署选项：[云](./deployment_options.md#cloud-saas)、[自带云](./deployment_options.md#bring-your-own-cloud)和[自托管企业版](./deployment_options.md#self-hosted-enterprise)
+
+
+## 计划详情
+
+|                                                                  | 开发者版                                   | 增强版                                                  | 企业版                                          |
+|------------------------------------------------------------------|---------------------------------------------|-------------------------------------------------------|---------------------------------------|
+| 部署选项                                               | 自托管精简版                            | 云                                                 | 自托管企业版、云、自带云 |
+| 用量                                                     | 免费，每年限制执行 100 万个节点 | 测试版期间免费，将按执行的节点收费 | 定制                                              |
+| 用于检索和更新状态及对话历史的 API | ✅                                           | ✅                                                     | ✅                                                   |
+| 用于检索和更新长期记忆的 API                | ✅                                           | ✅                                                     | ✅                                                   |
+| 水平可扩展的任务队列和服务器                    | ✅                                           | ✅                                                     | ✅                                                   |
+| 实时流式传输输出和中间步骤            | ✅                                           | ✅                                                     | ✅                                                   |
+| Assistants API（LangGraph 应用的可配置模板）       | ✅                                           | ✅                                                     | ✅                                                   |
+| Cron 调度                                                  | --                                          | ✅                                                     | ✅                                                   |
+| 用于原型设计的 LangGraph Studio                                 | ✅                                          | ✅                                                    | ✅                                        |
+| 用于调用 LangGraph API 的认证和授权        | --                                          | 即将推出！                                          | 即将推出！                                        |
+| 智能缓存以减少 LLM API 的流量                       | --                                          | 即将推出！                                          | 即将推出！                                        |
+| 状态的发布/订阅 API                                  | --                                          | 即将推出！                                          | 即将推出！                                        |
+| 调度优先级                                        | --                                          | 即将推出！                                          | 即将推出！                                        |
+
+有关定价信息，请参阅 [LangGraph Platform 定价](https://www.langchain.com/langgraph-platform-pricing)。
+
+## 相关
+
+有关更多信息，请参阅：
+
+* [部署选项概念指南](./deployment_options.md)
+* [LangGraph Platform 定价](https://www.langchain.com/langgraph-platform-pricing)
+* [LangSmith 计划](https://docs.smith.langchain.com/administration/pricing)

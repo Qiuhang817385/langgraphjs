@@ -1,0 +1,343 @@
+# 工具
+
+[工具](https://js.langchain.com/docs/concepts/tools/)是一种封装函数及其输入模式的方式，可以以支持工具调用的聊天模型可以传递的方式。这允许模型请求使用特定输入执行此函数。
+
+您可以[定义自己的工具](#define-tools)或使用 LangChain 提供的[预构建集成](#prebuilt-tools)。
+
+## 定义工具
+
+您使用 [`tool`](https://api.js.langchain.com/functions/_langchain_core.tools.tool-1.html) 函数创建工具：
+
+```ts
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { initChatModel } from "langchain/chat_models/universal";
+// highlight-next-line
+import { tool } from "@langchain/core/tools";
+import { z } from "zod";
+
+const multiply = tool(
+  async (input: { a: number; b: number }) => {
+    return input.a * input.b;
+  },
+  {
+    name: "multiply",
+    schema: z.object({
+      a: z.number().describe("First operand"),
+      b: z.number().describe("Second operand"),
+    }),
+    description: "Multiply two numbers.",
+  }
+);
+
+const llm = await initChatModel("anthropic:claude-3-7-sonnet-latest");
+const agent = createReactAgent({
+  llm,
+  tools: [multiply],
+});
+```
+
+有关其他自定义，请参阅 [自定义工具指南](https://js.langchain.com/docs/how_to/custom_tools/)。
+
+## 对模型隐藏参数
+
+某些工具需要仅限运行时的参数（例如，用户 ID 或会话上下文），这些参数不应由模型控制。
+
+您可以将这些参数放在智能体的 `state` 或 `config` 中，并在工具内部访问此信息：
+
+```ts
+import { z } from "zod";
+import { tool } from "@langchain/core/tools";
+// highlight-next-line
+import {
+  // highlight-next-line
+  getCurrentTaskInput,
+  // highlight-next-line
+  LangGraphRunnableConfig,
+} from "@langchain/langgraph";
+import { MessagesAnnotation } from "@langchain/langgraph";
+
+const myTool = tool(
+  async (
+    input: {
+      // 这将由 LLM 填充
+      toolArg: string;
+    },
+    // 访问在智能体调用时传递的静态数据
+    // highlight-next-line
+    config: LangGraphRunnableConfig
+  ) => {
+    // 获取当前智能体状态
+    // highlight-next-line
+    const state = getCurrentTaskInput() as typeof MessagesAnnotation.State;
+    doSomethingWithState(state.messages);
+    doSomethingWithConfig(config);
+    // ...
+  },
+  {
+    name: "myTool",
+    schema: z.object({
+      myToolArg: z.number().describe("Tool arg"),
+    }),
+    description: "My tool.",
+  }
+);
+```
+
+## 禁用并行工具调用
+
+某些模型提供商支持并行执行多个工具，但允许用户禁用此功能。
+
+对于支持的提供商，您可以通过 `model.bindTools()` 方法设置 `parallel_tool_calls: false` 来禁用并行工具调用：
+
+```ts
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { ChatOpenAI } from "@langchain/openai";
+import { tool } from "@langchain/core/tools";
+import { z } from "zod";
+
+const add = tool(
+  async (input: { a: number; b: number }) => {
+    return input.a + input.b;
+  },
+  {
+    name: "add",
+    schema: z.object({
+      a: z.number().describe("First operand"),
+      b: z.number().describe("Second operand"),
+    }),
+    description: "Add two numbers.",
+  }
+);
+
+const multiply = tool(
+  async (input: { a: number; b: number }) => {
+    return input.a * input.b;
+  },
+  {
+    name: "multiply",
+    schema: z.object({
+      a: z.number().describe("First operand"),
+      b: z.number().describe("Second operand"),
+    }),
+    description: "Multiply two numbers.",
+  }
+);
+
+const llm = new ChatOpenAI({ model: "gpt-4.1" });
+
+const tools = [add, multiply];
+const agent = createReactAgent({
+  // 禁用并行工具调用
+  // highlight-next-line
+  llm: llm.bindTools(tools, { parallel_tool_calls: false }),
+  tools,
+});
+
+const response = await agent.invoke({
+  messages: [{ role: "user", content: "what's 3 + 5 and 4 * 7?" }],
+});
+```
+
+## 直接返回工具结果
+
+使用 `returnDirect: true` 立即返回工具结果并停止智能体循环：
+
+```ts
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { initChatModel } from "langchain/chat_models/universal";
+import { tool } from "@langchain/core/tools";
+import { z } from "zod";
+
+const add = tool(
+  async (input: { a: number; b: number }) => {
+    return input.a + input.b;
+  },
+  {
+    name: "add",
+    schema: z.object({
+      a: z.number().describe("First operand"),
+      b: z.number().describe("Second operand"),
+    }),
+    description: "Add two numbers.",
+    // highlight-next-line
+    returnDirect: true,
+  }
+);
+
+const llm = await initChatModel("anthropic:claude-3-7-sonnet-latest");
+const agent = createReactAgent({
+  llm,
+  tools: [add],
+});
+
+const response = await agent.invoke({
+  messages: [{ role: "user", content: "what's 3 + 5?" }],
+});
+```
+
+## 强制使用工具
+
+要强制智能体使用特定工具，您可以在 `model.bindTools()` 中设置 `tool_choice` 选项：
+
+```ts
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { initChatModel } from "langchain/chat_models/universal";
+import { tool } from "@langchain/core/tools";
+import { z } from "zod";
+
+const greet = tool(
+  async (input: { userName: string }) => {
+    return `Hello ${input.userName}!`;
+  },
+  {
+    name: "greet",
+    schema: z.object({
+      userName: z.string().describe("Name of the user to greet"),
+    }),
+    description: "Greet user.",
+    // highlight-next-line
+    returnDirect: true,
+  }
+);
+
+const llm = new ChatAnthropic({ model: "claude-3-7-sonnet-latest" });
+const tools = [greet];
+
+const agent = createReactAgent({
+  // highlight-next-line
+  llm: llm.bindTools(tools, { tool_choice: { type: "tool", name: "greet" } }),
+  tools,
+});
+
+const response = await agent.invoke({
+  messages: "Hi, I am Bob",
+});
+```
+
+!!! Warning "避免无限循环"
+
+    在没有停止条件的情况下强制使用工具可能会创建无限循环。使用以下保护措施之一：
+
+    - 使用 [`returnDirect: True`](#return-tool-results-directly) 标记工具，在执行后结束循环。
+    - 设置 [`recursionLimit`](../concepts/low_level.md#recursion-limit) 以限制执行步骤数。
+
+## 处理工具错误
+
+默认情况下，智能体将捕获工具调用期间引发的所有异常，并将这些作为工具消息传递给 LLM。要控制错误处理方式，您可以使用预构建的 [`ToolNode`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph_prebuilt.ToolNode.html)——`createReactAgent` 内部执行工具的节点——通过其 `handleToolErrors` 参数：
+
+=== "启用错误处理（默认）"
+
+    ```ts
+    import { createReactAgent } from "@langchain/langgraph/prebuilt";
+    import { initChatModel } from "langchain/chat_models/universal";
+    import { tool } from "@langchain/core/tools";
+    import { z } from "zod";
+
+    const multiply = tool(
+      async (input: { a: number; b: number }) => {
+        if (input.a === 42) {
+          throw new Error("The ultimate error");
+        }
+        return input.a * input.b;
+      },
+      {
+        name: "multiply",
+        schema: z.object({
+          a: z.number().describe("First operand"),
+          b: z.number().describe("Second operand"),
+        }),
+        description: "Multiply two numbers.",
+      }
+    );
+
+    // 使用错误处理运行（默认）
+    const llm = await initChatModel("anthropic:claude-3-7-sonnet-latest");
+    const agent = createReactAgent({
+      llm,
+      tools: [multiply],
+    });
+
+    const response = await agent.invoke(
+      { messages: [ { role: "user", content: "what's 42 x 7?" } ] }
+    );
+    ```
+
+=== "禁用错误处理"
+
+    ```ts
+    import { createReactAgent } from "@langchain/langgraph/prebuilt";
+    import { initChatModel } from "langchain/chat_models/universal";
+    import { tool } from "@langchain/core/tools";
+    import { z } from "zod";
+    import { ToolNode } from "@langchain/langgraph/prebuilt";
+
+    const multiply = tool(
+      async (input: { a: number; b: number }) => {
+        if (input.a === 42) {
+          throw new Error("The ultimate error");
+        }
+        return input.a * input.b;
+      },
+      {
+        name: "multiply",
+        schema: z.object({
+          a: z.number().describe("First operand"),
+          b: z.number().describe("Second operand"),
+        }),
+        description: "Multiply two numbers.",
+      }
+    );
+
+    // highlight-next-line
+    const toolNode = new ToolNode({
+      tools: [multiply],
+      // highlight-next-line
+      handleToolErrors: false, // (1)!
+    });
+
+    const llm = await initChatModel("anthropic:claude-3-7-sonnet-latest");
+    const agentNoErrorHandling = createReactAgent({
+      llm,
+      tools: toolNode,
+    });
+
+    const response = await agentNoErrorHandling.invoke(
+      { messages: [ { role: "user", content: "what's 42 x 7?" } ] }
+    );
+    ```
+
+    1. 这禁用错误处理（默认启用）。
+
+## 预构建工具
+
+您可以通过向 `createReactAgent` 的 `tools` 参数传递带有工具规范的字典来使用模型提供商的预构建工具。例如，要使用 OpenAI 的 `web_search_preview` 工具：
+
+```ts
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { initChatModel } from "langchain/chat_models/universal";
+
+const llm = await initChatModel("openai:gpt-4o-mini");
+
+const agent = createReactAgent({
+  llm,
+  tools: [{ type: "web_search_preview" }],
+});
+
+const response = await agent.invoke({
+  messages: ["What was a positive news story from today?"],
+});
+```
+
+此外，LangChain 支持广泛的预构建工具集成，用于与 API、数据库、文件系统、Web 数据等交互。这些工具扩展了智能体的功能并支持快速开发。
+
+您可以在 [LangChain 集成目录](https://js.langchain.com/docs/integrations/tools/)中浏览完整的可用集成列表。
+
+一些常用的工具类别包括：
+
+- **搜索**：Exa、SerpAPI、Tavily
+- **代码解释器**：Python REPL
+- **数据库**：SQL、MongoDB、Redis
+- **Web 数据**：网页抓取和浏览
+- **API**：Discord、Gmail 等
+
+这些集成可以使用与上述示例中相同的 `tools` 参数配置并添加到您的智能体。

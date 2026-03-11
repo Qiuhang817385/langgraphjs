@@ -1,0 +1,21 @@
+# UI
+
+您可以使用预构建的聊天 UI 通过 [Agent Chat UI](https://github.com/langchain-ai/agent-chat-ui) 与任何 LangGraph 智能体进行交互。使用[已部署的版本](https://agentchat.vercel.app)是最快的入门方式，允许您与本地和部署的图进行交互。
+
+## 在 UI 中运行智能体
+
+首先，在[本地](./deployment.md#launch-langgraph-server-locally)设置 LangGraph API 服务器，或在 [LangSmith Deployment](https://langchain-ai.github.io/langgraph/cloud/quick_start/) 上部署您的智能体。
+
+然后，导航到 [Agent Chat UI](https://agentchat.vercel.app)，或克隆存储库并[在本地运行开发服务器](https://github.com/langchain-ai/agent-chat-ui?tab=readme-ov-file#setup)：
+
+<video controls src="../assets/base-chat-ui.mp4" type="video/mp4"></video>
+
+!!! Tip
+
+    UI 对渲染工具调用和工具结果消息提供开箱即用的支持。要自定义显示哪些消息，请参见 Agent Chat UI 文档中的 [Hiding Messages in the Chat](https://github.com/langchain-ai/agent-chat-ui?tab=readme-ov-file#hiding-messages-in-the-chat) 部分。
+
+## 生成式 UI
+
+您还可以在 Agent Chat UI 中使用生成式 UI。
+
+生成式 UI 允许您定义 [React](https://react.dev/) 组件，并将它们从 LangGraph 服务器推送到 UI。有关构建生成式 UI LangGraph 智能体的更多文档，请阅读[这些文档](https://langchain-ai.github.io/langgraph/cloud/how-tos/generative_ui_react/)。

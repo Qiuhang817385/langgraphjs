@@ -1,0 +1,124 @@
+# 评估
+
+要评估智能体的性能，您可以使用 `LangSmith` [评估](https://docs.smith.langchain.com/evaluation)。您首先需要定义一个评估函数来判断智能体的结果，例如最终输出或轨迹。根据您的评估技术，这可能涉及或不涉及参考输出：
+
+```ts
+const evaluator = async (params: {
+  inputs: Record<string, unknown>;
+  outputs: Record<string, unknown>;
+  referenceOutputs?: Record<string, unknown>;
+}) => {
+  // 将智能体输出与参考输出进行比较
+  const outputMessages = params.outputs.messages;
+  const referenceMessages = params.referenceOutputs.messages;
+  const score = compareMessages(outputMessages, referenceMessages);
+  return { key: "evaluator_score", score: score };
+};
+```
+
+首先，您可以使用 `AgentEvals` 包中的预构建评估器：
+
+```bash
+npm install agentevals @langchain/core
+```
+
+## 创建评估器
+
+评估智能体性能的常见方法是将其轨迹（调用工具的顺序）与参考轨迹进行比较：
+
+```ts
+// highlight-next-line
+import { createTrajectoryMatchEvaluator } from "agentevals";
+
+const outputs = [
+  {
+    role: "assistant",
+    tool_calls: [
+      {
+        function: {
+          name: "get_weather",
+          arguments: JSON.stringify({ city: "san francisco" }),
+        },
+      },
+      {
+        function: {
+          name: "get_directions",
+          arguments: JSON.stringify({ destination: "presidio" }),
+        },
+      },
+    ],
+  },
+];
+
+const referenceOutputs = [
+  {
+    role: "assistant",
+    tool_calls: [
+      {
+        function: {
+          name: "get_weather",
+          arguments: JSON.stringify({ city: "san francisco" }),
+        },
+      },
+    ],
+  },
+];
+
+// 创建评估器
+const evaluator = createTrajectoryMatchEvaluator({
+  // highlight-next-line
+  trajectoryMatchMode: "superset",  // (1)!
+})
+
+// 运行评估器
+const result = await evaluator({
+  outputs,
+  referenceOutputs,
+});
+```
+
+1. 指定将如何比较轨迹。`superset` 将接受输出轨迹为有效，如果它是参考轨迹的超集。其他选项包括：[strict](https://github.com/langchain-ai/agentevals?tab=readme-ov-file#strict-match)、[unordered](https://github.com/langchain-ai/agentevals?tab=readme-ov-file#unordered-match) 和 [subset](https://github.com/langchain-ai/agentevals?tab=readme-ov-file#subset-and-superset-match)
+
+
+作为下一步，了解有关如何 [自定义轨迹匹配评估器](https://github.com/langchain-ai/agentevals?tab=readme-ov-file#agent-trajectory-match) 的更多信息。
+
+### LLM 作为评判者
+
+您可以使用 LLM-as-a-judge 评估器，它使用 LLM 将轨迹与参考输出进行比较并输出分数：
+
+```ts
+import {
+  // highlight-next-line
+  createTrajectoryLLMAsJudge,
+  TRAJECTORY_ACCURACY_PROMPT_WITH_REFERENCE
+} from "agentevals";
+
+const evaluator = createTrajectoryLLMAsJudge({
+  prompt: TRAJECTORY_ACCURACY_PROMPT_WITH_REFERENCE,
+  model: "openai:o3-mini",
+});
+```
+
+## 运行评估器
+
+要运行评估器，您首先需要创建一个 [LangSmith 数据集](https://docs.smith.langchain.com/evaluation/concepts#datasets)。要使用预构建的 AgentEvals 评估器，您需要具有以下模式的数据集：
+
+- **input**: `{ messages: [...] }` 用于调用智能体的输入消息。
+- **output**: `{ messages": [...] }` 智能体输出中的预期消息历史。对于轨迹评估，您可以选择仅保留助手消息。
+
+```ts
+import { evaluate } from "langsmith/evaluation";
+import { createTrajectoryMatchEvaluator } from "agentevals";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+
+const agent = createReactAgent({ ... })
+const evaluator = createTrajectoryMatchEvaluator({ ... })
+await evaluate(
+  async (inputs) => await agent.invoke(inputs),
+  {
+    // 替换为您的数据集名称
+    data: "<Name of your dataset>",
+    evaluators: [evaluator],
+  }
+);
+```
