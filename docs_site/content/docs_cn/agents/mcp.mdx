@@ -1,0 +1,107 @@
+---
+title: MCP 集成
+---
+
+# MCP 集成
+
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) 是一个开放协议，标准化了应用程序向语言模型提供工具和上下文的方式。LangGraph 智能体可以通过 `@langchain/mcp-adapters` 库使用在 MCP 服务器上定义的工具。
+
+![MCP](./assets/mcp.png)
+
+安装 `@langchain/mcp-adapters` 库以在 LangGraph 中使用 MCP 工具：
+
+```bash
+npm install @langchain/mcp-adapters
+```
+
+## 使用 MCP 工具
+
+`@langchain/mcp-adapters` 包使智能体能够使用在一个或多个 MCP 服务器上定义的工具。
+
+```ts
+// highlight-next-line
+import { MultiServerMCPClient } from "@langchain/mcp-adapters";
+import { initChatModel } from "langchain/chat_models/universal";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+
+// highlight-next-line
+const client = new MultiServerMCPClient({
+  mcpServers: {
+    "math": {
+      command: "python",
+      // 替换为您的 math_server.py 文件的绝对路径
+      args: ["/path/to/math_server.py"],
+      transport: "stdio",
+    },
+    "weather": {
+      // 确保您的天气服务器在 8000 端口启动
+      url: "http://localhost:8000/sse",
+      transport: "sse",
+    }
+  }
+})
+
+const llm = await initChatModel("anthropic:claude-3-7-sonnet-latest");
+const agent = createReactAgent({
+  llm,
+  // highlight-next-line
+  tools: await client.getTools()
+});
+ 
+const mathResponse = await agent.invoke(
+  { messages: [ { role: "user", content: "what's (3 + 5) x 12?" } ] }
+);
+const weatherResponse = await agent.invoke(
+  { messages: [ { role: "user", content: "what is the weather in nyc?" } ] }
+);
+await client.close();
+```
+
+## 自定义 MCP 服务器
+
+要创建自己的 MCP 服务器，您可以在 Python 中使用 `mcp` 库（或在 TypeScript 中使用 `@modelcontextprotocol/sdk`）。这些库提供了一种简单的方式来定义工具并将它们作为服务器运行。
+
+安装 MCP 库：
+
+```bash
+pip install mcp
+```
+使用以下参考实现来测试您的智能体与 MCP 工具服务器。
+
+```python title="示例数学服务器（stdio 传输）"
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("Math")
+
+@mcp.tool()
+def add(a: int, b: int) -> int:
+    """Add two numbers"""
+    return a + b
+
+@mcp.tool()
+def multiply(a: int, b: int) -> int:
+    """Multiply two numbers"""
+    return a * b
+
+if __name__ == "__main__":
+    mcp.run(transport="stdio")
+```
+
+```python title="示例天气服务器（SSE 传输）"
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("Weather")
+
+@mcp.tool()
+async def get_weather(location: str) -> str:
+    """Get weather for location."""
+    return "It's always sunny in New York"
+
+if __name__ == "__main__":
+    mcp.run(transport="sse")
+```
+
+## 其他资源
+
+- [MCP 文档](https://modelcontextprotocol.io/introduction)
+- [MCP 传输文档](https://modelcontextprotocol.io/docs/concepts/transports)

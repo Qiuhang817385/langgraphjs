@@ -1,0 +1,12 @@
+{
+  "title": "How tos",
+  "pages": [
+    "index",
+    "agent_executor",
+    "auth",
+    "http",
+    "img",
+    "deploy-self-hosted",
+    "use-remote-graph"
+  ]
+}

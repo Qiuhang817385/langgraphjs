@@ -1,0 +1,62 @@
+---
+title: 模型
+---
+
+# 模型
+
+本页面描述如何配置智能体使用的聊天模型。
+
+## 工具调用支持
+
+要启用工具调用智能体，底层 LLM 必须支持[工具调用](https://js.langchain.com/docs/concepts/tool_calling/)。
+
+兼容的模型可以在 [LangChain 集成目录](https://js.langchain.com/docs/integrations/chat/)中找到。
+
+## 使用 `initChatModel`
+
+[`initChatModel`](https://js.langchain.com/docs/how_to/chat_models_universal_init/) 实用程序通过可配置参数简化模型初始化：
+
+```ts
+import { initChatModel } from "langchain/chat_models/universal";
+
+const llm = await initChatModel(
+  "anthropic:claude-3-7-sonnet-latest",
+  {
+    temperature: 0,
+    maxTokens: 2048
+  }
+);
+```
+
+有关高级选项，请参阅 [API 参考](https://api.js.langchain.com/functions/langchain.chat_models_universal.initChatModel.html)。
+
+## 使用特定提供商的 LLM
+
+如果模型提供商无法通过 `initChatModel` 使用，您可以直接实例化提供商的模型类。该模型必须实现 [`BaseChatModel`](https://api.js.langchain.com/classes/_langchain_core.language_models_chat_models.BaseChatModel.html) 接口并支持工具调用：
+
+```ts
+import { ChatAnthropic } from "@langchain/anthropic";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+
+// highlight-next-line
+const llm = new ChatAnthropic({
+  modelName: "claude-3-7-sonnet-latest",
+  temperature: 0,
+  maxTokens: 2048
+});
+
+const agent = createReactAgent({
+  // highlight-next-line
+  llm,
+  // other parameters
+});
+```
+
+:::note[说明性示例]
+
+    上面的示例使用 `ChatAnthropic`，它已经被 `initChatModel` 支持。此模式用于说明如何手动实例化无法通过 `initChatModel` 使用的模型。
+
+## 其他资源
+
+- [模型集成目录](https://js.langchain.com/docs/integrations/chat/)
+- [使用 `initChatModel` 进行通用初始化](https://js.langchain.com/docs/how_to/chat_models_universal_init/)

@@ -3,4 +3,5 @@ packages:
   - 'examples/*'
   - 'libs/*'
   - 'internal/*'
+  - '!docs_site'
 

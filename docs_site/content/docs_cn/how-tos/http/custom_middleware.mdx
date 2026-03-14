@@ -1,0 +1,77 @@
+---
+title: 如何添加自定义中间件
+---
+
+# 如何添加自定义中间件
+
+在 LangGraph 平台上部署代理时，你可以向服务器添加自定义中间件，以处理诸如记录请求指标、注入或检查 headers 以及强制执行安全策略等跨领域关注点，而无需修改核心服务器逻辑。这与[添加自定义路由](./custom_routes.md)的方式相同——你只需要提供自己的 [`Hono`](https://hono.dev/) 应用。
+
+添加中间件让你可以全局拦截和修改请求，无论它们是指向你的自定义端点还是内置的 LangGraph Platform API。
+
+:::warning[仅适用于内置 LangGraph Platform API 的请求]
+
+    目前仅支持拦截和修改请求。
+
+    你仍然可以向响应添加自定义 headers，但修改内置 LangGraph Platform 端点的响应 headers 或响应 body 尚不支持。
+
+## 创建应用
+
+从**现有的** LangGraph Platform 应用开始，将以下中间件代码添加到你的 `app.ts` 文件中。如果你是从头开始，可以使用 CLI 从模板创建新应用。
+
+```bash
+npm create langgraph
+```
+
+确保安装 `hono` 作为依赖项。
+
+```bash
+npm install hono
+```
+
+一旦你有了 LangGraph 项目，添加以下应用代码：
+
+```typescript
+import { Hono } from "hono";
+
+export const app = new Hono();
+
+app.use(async (c, next) => {
+  c.header("X-Custom-Header", "Hello World");
+  await next();
+});
+```
+
+## 配置 `langgraph.json`
+
+将以下内容添加到你的 `langgraph.json` 文件中。确保路径指向你上面创建的 `app.py` 文件。
+
+```json
+{
+  "graphs": {
+    "agent": "./src/agent/graph.ts:graph"
+  },
+  "env": ".env",
+  "http": {
+    "app": "./src/agent/app.ts:app"
+  }
+  // 其他配置选项如 auth、store 等。
+}
+```
+
+## 启动服务器
+
+在本地测试服务器：
+
+```bash
+npx langgraph-cli@latest dev --no-browser
+```
+
+现在，对你服务器的任何请求都将在其响应中包含自定义 header `X-Custom-Header`。
+
+## 部署
+
+你可以按原样将此应用部署到托管的 LangGraph Cloud 或你的自托管平台。
+
+## 下一步
+
+既然你已经向部署添加了自定义中间件，你可以使用类似的技术来添加[自定义路由](./custom_routes.md)。

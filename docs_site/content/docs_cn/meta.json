@@ -1,0 +1,16 @@
+{
+  "title": "Docs_cn",
+  "pages": [
+    "index",
+    "agents",
+    "concepts",
+    "css",
+    "how-tos",
+    "static",
+    "troubleshooting",
+    "tutorials",
+    "versions",
+    "adopters",
+    "llms-txt-overview"
+  ]
+}

@@ -1,0 +1,138 @@
+---
+title: 如何进行 LangGraph 的自托管部署
+---
+
+# 如何进行 LangGraph 的自托管部署
+
+:::info[先决条件]
+
+    - [应用结构](../concepts/application_structure.md)
+    - [部署选项](../concepts/deployment_options.md)
+
+本操作指南将引导你如何从现有的 LangGraph 应用创建 docker 镜像，以便在你自己的基础设施上进行部署。
+
+## 工作原理
+
+使用自托管部署选项，你需要负责管理基础设施，包括设置和维护必要的数据库、Redis 实例和其他服务。
+
+你需要执行以下操作：
+
+1. 在你自己的基础设施上部署 Redis 和 Postgres 实例。
+2. 使用 [LangGraph CLI](../concepts/langgraph_cli.md) 构建带有 [LangGraph Server](../concepts/langgraph_server.md) 的 docker 镜像。
+3. 部署一个 web 服务器来运行 docker 镜像并传入必要的环境变量。
+
+## 环境变量
+
+你最终需要向 LangGraph Deploy 服务器传入以下环境变量：
+
+- `REDIS_URI`：Redis 实例的连接信息。Redis 将用作 pub-sub 代理，以支持从后台运行中流式传输实时输出。
+- `DATABASE_URI`：Postgres 连接信息。Postgres 将用于存储 assistants、threads、runs、持久化线程状态和长期记忆，并使用"恰好一次"语义管理后台任务队列的状态。
+- `LANGSMITH_API_KEY`：（如果使用 [Self-Hosted Lite]）LangSmith API 密钥。这将用于在服务器启动时进行一次认证。
+- `LANGGRAPH_CLOUD_LICENSE_KEY`：（如果使用 Self-Hosted Enterprise）LangGraph Platform 许可证密钥。这将用于在服务器启动时进行一次认证。
+
+
+## 构建 Docker 镜像
+
+请阅读[应用结构](../concepts/application_structure.md)指南，了解如何构建你的 LangGraph 应用。
+
+如果应用结构正确，你可以使用 LangGraph Deploy 服务器构建 docker 镜像。
+
+要构建 docker 镜像，你首先需要安装 CLI：
+
+```shell
+pip install -U langgraph-cli
+```
+
+然后你可以使用：
+
+```
+langgraph build -t my-image
+```
+
+这将构建一个带有 LangGraph Deploy 服务器的 docker 镜像。`-t my-image` 用于为镜像打标签（命名）。
+
+运行此服务器时，你需要传递三个环境变量：
+
+## 在本地运行应用
+
+### 使用 Docker
+
+```shell
+docker run \
+    -e REDIS_URI="foo" \
+    -e DATABASE_URI="bar" \
+    -e LANGSMITH_API_KEY="baz" \
+    my-image
+```
+
+如果你想快速运行而不设置单独的 Redis 和 Postgres 实例，可以使用这个 docker compose 文件。
+
+:::note
+
+    * 你需要将 `my-image` 替换为你在上一步构建的镜像名称（来自 `langgraph build`）。
+    并且你应该为 `REDIS_URI`、`DATABASE_URI` 和 `LANGSMITH_API_KEY` 提供适当的值。
+    * 如果你的应用需要额外的环境变量，你可以以类似的方式传递它们。
+    * 如果使用 Self-Hosted Enterprise，你必须提供 `LANGGRAPH_CLOUD_LICENSE_KEY` 作为额外的环境变量。
+
+
+### 使用 Docker Compose
+
+```yml
+volumes:
+    langgraph-data:
+        driver: local
+services:
+    langgraph-redis:
+        image: redis:6
+        healthcheck:
+            test: redis-cli ping
+            interval: 5s
+            timeout: 1s
+            retries: 5
+    langgraph-postgres:
+        image: postgres:16
+        ports:
+            - "5433:5432"
+        environment:
+            POSTGRES_DB: postgres
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+        volumes:
+            - langgraph-data:/var/lib/postgresql/data
+        healthcheck:
+            test: pg_isready -U postgres
+            start_period: 10s
+            timeout: 1s
+            retries: 5
+            interval: 5s
+    langgraph-api:
+        image: ${IMAGE_NAME}
+        ports:
+            - "8123:8000"
+        depends_on:
+            langgraph-redis:
+                condition: service_healthy
+            langgraph-postgres:
+                condition: service_healthy
+        env_file:
+            - .env
+        environment:
+            REDIS_URI: redis://langgraph-redis:6379
+            LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
+            POSTGRES_URI: postgres://postgres:postgres@langgraph-postgres:5432/postgres?sslmode=disable
+```
+
+然后你可以在与此 Docker compose 文件相同的文件夹中运行 `docker compose up`。
+
+这将在端口 `8123` 上启动 LangGraph Deploy（如果你想更改此端口，可以通过更改 `langgraph-api` 卷中的端口来实现）。
+
+你可以通过以下方式测试应用是否已启动：
+
+```shell
+curl --request GET --url 0.0.0.0:8123/ok
+```
+假设一切运行正常，你应该会看到如下响应：
+
+```shell
+{"ok":true}
+```

@@ -1,0 +1,47 @@
+{
+  "name": "langgraphjs-docs-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LangGraphJS Documentation Site - Built with Fumadocs",
+  "type": "module",
+  "scripts": {
+    "build": "next build --webpack",
+    "dev": "next dev --webpack",
+    "start": "npx serve dist -p 3000",
+    "preview": "next build && npx serve dist -p 3000",
+    "postinstall": "fumadocs-mdx",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.2.0",
+    "@radix-ui/react-dialog": "^1.1.0",
+    "@radix-ui/react-select": "^2.1.0",
+    "@shikijs/transformers": "^3.0.0",
+    "@theguild/remark-mermaid": "^0.3.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "fumadocs-core": "^16.0.0",
+    "fumadocs-docgen": "^1.2.0",
+    "fumadocs-mdx": "^14.2.4",
+    "fumadocs-typescript": "^5.0.0",
+    "fumadocs-ui": "^16.0.0",
+    "lucide-react": "^0.460.0",
+    "next": "^16.0.0",
+    "posthog-js": "^1.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-ga4": "^2.0.0",
+    "rehype-highlight-code-lines": "^1.0.0",
+    "shiki": "^3.0.0",
+    "tailwind-merge": "^2.5.0",
+    "tailwindcss": "^4.1.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@tsconfig/recommended": "^1.0.3",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.5.0"
+  }
+}

@@ -1,0 +1,19 @@
+---
+title: 常见问题
+---
+
+# 常见问题
+
+常见问题及其答案！
+
+## 我需要使用 LangChain 才能使用 LangGraph 吗？
+
+不需要！LangGraph 是一个通用框架 —— 节点和边只不过是 JavaScript/TypeScript 函数。你可以在这些节点和边中使用 LangChain、原始 HTTP 请求，甚至其他框架。
+
+## LangGraph 是否适用于不支持工具调用的 LLM？
+
+是的！你可以将 LangGraph 与任何 LLM 一起使用。我们使用支持工具调用的 LLM 的主要原因是，这通常是让 LLM 决定做什么的最方便的方式。如果你的 LLM 不支持工具调用，你仍然可以使用它 —— 你只需要编写一些逻辑来将原始 LLM 字符串响应转换为关于做什么的决策。
+
+## LangGraph 是否适用于开源 LLM？
+
+是的！LangGraph 对使用什么 LLM 完全无感。我们在大多数教程中使用闭源 LLM 的主要原因是它们无缝支持工具调用，而开源 LLM 通常不支持。但工具调用不是必需的（参见[此部分](#does-langgraph-work-with-llms-that-dont-support-tool-calling)），所以你完全可以将 LangGraph 与开源 LLM 一起使用。

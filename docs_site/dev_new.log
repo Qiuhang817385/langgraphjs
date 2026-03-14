@@ -1,0 +1,19 @@
+
+> langgraphjs-docs-site@1.0.0 dev
+> next dev
+
+⚠ Specified "redirects" will not automatically work with "output: export". See more info here: https://nextjs.org/docs/messages/export-no-custom-routes
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.31.113:3000
+
+✓ Starting...
+▲ [WARNING] Cannot find base config file "@tsconfig/recommended" [tsconfig.json]
+
+    ../tsconfig.json:2:13:
+      2 │   "extends": "@tsconfig/recommended",
+        ╵              ~~~~~~~~~~~~~~~~~~~~~~~
+
+[MDX] generated files in 33.55880000000002ms
+[MDX] started dev server
+✓ Ready in 1017ms

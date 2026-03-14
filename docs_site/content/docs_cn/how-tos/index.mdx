@@ -1,0 +1,269 @@
+---
+title: 操作指南
+description: 如何在 LangGraph.js 中完成常见任务
+---
+
+# 操作指南
+
+在这里，你可以找到回答“如何……？”类型问题的答案。这些指南是**目标导向**和具体的；它们旨在帮助你完成特定的任务。有关概念性解释，请参阅[概念指南](../concepts/index.md)。有关端到端的分步教程，请参阅[教程](../tutorials/index.md)。有关每个类和函数的完整描述，请参阅[API 参考](https://langchain-ai.github.io/langgraphjs/reference/)。
+
+## 安装
+
+- [如何安装和管理依赖项](manage-ecosystem-dependencies.ipynb)
+- [如何在 Web 环境中使用 LangGraph.js](use-in-web-environments.ipynb)
+
+## LangGraph
+
+### 可控性
+
+LangGraph.js 以其高度可控的代理框架而闻名。
+这些操作指南展示了如何实现这种可控性。
+
+- [如何创建用于并行执行的分支](branching.ipynb)
+- [如何创建用于并行执行的 map-reduce 分支](map-reduce.ipynb)
+- [如何延迟节点执行](defer-node-execution.ipynb)
+- [如何使用 Command 组合控制流和状态更新](command.ipynb)
+- [如何使用递归限制创建和控制循环](recursion-limit.ipynb)
+
+### 持久化
+
+LangGraph.js 可以轻松地在图运行之间持久化状态。下面的指南展示了如何为你的图添加持久化。
+
+- [如何为图添加线程级持久化](persistence.ipynb)
+- [如何为子图添加线程级持久化](subgraph-persistence.ipynb)
+- [如何添加跨线程持久化](cross-thread-persistence.ipynb)
+- [如何使用 Postgres checkpointer 进行持久化](persistence-postgres.ipynb)
+
+有关如何使用[函数式 API](../concepts/functional_api.md) 为工作流添加持久化的指南，请参阅：
+
+- [如何添加线程级持久化（函数式 API）](persistence-functional.ipynb)
+- [如何添加跨线程持久化（函数式 API）](cross-thread-persistence-functional.ipynb)
+
+### 记忆
+
+LangGraph 可以轻松管理图中的对话[记忆](../concepts/memory.md)。这些操作指南展示了如何实现不同的记忆策略。
+
+- [如何管理对话历史](manage-conversation-history.ipynb)
+- [如何删除消息](delete-messages.ipynb)
+- [如何添加对话历史的摘要](add-summary-conversation-history.ipynb)
+- [如何添加长期记忆（跨线程）](cross-thread-persistence.ipynb)
+- [如何使用语义搜索实现长期记忆](semantic-search.ipynb)
+
+### Human-in-the-loop
+
+[Human-in-the-loop](/langgraphjs/concepts/human_in_the_loop) 功能允许你让真人参与图的决策过程。这些操作指南展示了如何在图中实现 human-in-the-loop 工作流。
+
+关键工作流：
+
+- [如何等待用户输入](wait-user-input.ipynb)：一个基本示例，展示了如何使用 `interrupt` 函数在图中实现 human-in-the-loop 工作流。
+- [如何审查工具调用](review-tool-calls.ipynb)：使用 `interrupt` 函数，在工具调用请求执行前实现 human-in-the-loop 来审查/编辑/接受这些请求。
+
+其他方法：
+
+- [如何添加静态断点](breakpoints.ipynb)：用于调试目的。对于 [**human-in-the-loop**](/langgraphjs/concepts/human_in_the_loop) 工作流，我们建议使用 [`interrupt` 函数](/langgraphjs/reference/functions/langgraph.interrupt-1.html)。
+- [如何编辑图状态](edit-graph-state.ipynb)：使用 `graph.update_state` 方法编辑图状态。如果通过**静态断点**实现 **human-in-the-loop** 工作流，请使用此方法。
+- [如何使用 `NodeInterrupt` 添加动态断点](dynamic_breakpoints.ipynb)：**不推荐**：请改用 [`interrupt` 函数](/langgraphjs/concepts/human_in_the_loop)。
+
+有关如何使用[函数式 API](../concepts/functional_api.md) 实现 human-in-the-loop 工作流的指南，请参阅：
+
+- [如何等待用户输入（函数式 API）](wait-user-input-functional.ipynb)
+- [如何审查工具调用（函数式 API）](review-tool-calls-functional.ipynb)
+
+### 时间旅行
+
+[时间旅行](../concepts/time-travel.md) 允许你在 LangGraph 应用中回放过去的操作，以探索替代路径和调试问题。这些操作指南展示了如何在图中使用时间旅行。
+
+- [如何查看和更新过去的图状态](time-travel.ipynb)
+
+### 流式处理
+
+LangGraph 是专为流式处理而构建的。
+这些指南展示了如何使用不同的流式模式。
+
+- [如何流式传输图的完整状态](stream-values.ipynb)
+- [如何流式传输图的状态更新](stream-updates.ipynb)
+- [如何流式传输 LLM token](stream-tokens.ipynb)
+- [如何在没有 LangChain 模型的情况下流式传输 LLM token](streaming-tokens-without-langchain.ipynb)
+- [如何流式传输自定义数据](streaming-content.ipynb)
+- [如何配置多种流式模式](stream-multiple.ipynb)
+- [如何从工具中流式传输事件](streaming-events-from-within-tools.ipynb)
+- [如何从最终节点进行流式传输](streaming-from-final-node.ipynb)
+
+### 工具调用
+
+- [如何使用 ToolNode 调用工具](tool-calling.ipynb)
+- [如何强制代理调用工具](force-calling-a-tool-first.ipynb)
+- [如何处理工具调用错误](tool-calling-errors.ipynb)
+- [如何向工具传递运行时值](pass-run-time-values-to-tools.ipynb)
+- [如何从工具更新图状态](update-state-from-tools.ipynb)
+
+### 子图
+
+[子图](../concepts/low_level.md#subgraphs) 允许你从一个图中复用另一个图。这些操作指南展示了如何使用子图：
+
+- [如何添加和使用子图](subgraph.ipynb)
+- [如何查看和更新子图中的状态](subgraphs-manage-state.ipynb)
+- [如何转换子图的输入和输出](subgraph-transform-state.ipynb)
+
+### 多代理
+
+- [如何构建多代理网络](multi-agent-network.ipynb)
+- [如何在多代理应用中添加多轮对话](multi-agent-multi-turn-convo.ipynb)
+
+有关其他多代理架构的实现，请参阅[多代理教程](../tutorials/index.md#multi-agent-systems)。
+
+有关如何使用[函数式 API](../concepts/functional_api.md) 实现多代理工作流的指南，请参阅：
+
+- [如何构建多代理网络（函数式 API）](multi-agent-network-functional.ipynb)
+- [如何在多代理应用中添加多轮对话（函数式 API）](multi-agent-multi-turn-convo-functional.ipynb)
+
+### 状态管理
+
+- [如何定义图状态](define-state.ipynb)
+- [拥有独立的输入和输出模式](input_output_schema.ipynb)
+- [在图内部的节点之间传递私有状态](pass_private_state.ipynb)
+
+### 其他
+
+- [如何向图添加运行时配置](configuration.ipynb)
+- [如何添加节点重试](node-retry-policies.ipynb)
+- [如何缓存昂贵的节点](node-caching.ipynb)
+- [如何让代理直接返回工具结果](dynamically-returning-directly.ipynb)
+- [如何让代理以结构化格式响应](respond-in-format.ipynb)
+- [如何管理代理步骤](managing-agent-steps.ipynb)
+
+### 预构建的 ReAct 代理
+
+- [如何创建 ReAct 代理](create-react-agent.ipynb)
+- [如何为 ReAct 代理添加记忆](react-memory.ipynb)
+- [如何为 ReAct 代理添加系统提示](react-system-prompt.ipynb)
+- [如何为 ReAct 代理添加 Human-in-the-loop](react-human-in-the-loop.ipynb)
+- [如何从 ReAct 代理返回结构化输出](react-return-structured-output.ipynb)
+
+有关如何使用[函数式 API](../concepts/functional_api.md) 构建 ReAct 代理的指南，请参阅：
+
+- [如何从零开始创建 ReAct 代理（函数式 API）](react-agent-from-scratch-functional.ipynb)
+
+## LangGraph Platform
+
+本节包含 LangGraph Platform 的操作指南。
+
+LangGraph Platform 是一个用于在生产环境中部署代理应用的商用解决方案，基于开源的 LangGraph 框架构建。它提供了四种部署选项以满足不同需求：免费版、自托管版、云 SaaS 版以及 BYOC（自带云）选项。你可以在[部署选项指南](../concepts/deployment_options.md)中详细了解这些选项。
+
+:::tip
+
+    * LangGraph 是一个 MIT 许可的开源库，我们致力于维护和促进其在社区中的发展。
+    * 你可以随时使用开源的 LangGraph 项目在你自己的基础设施上部署 LangGraph 应用，而无需使用 LangGraph Platform。
+
+### 应用结构
+
+了解如何设置你的应用以部署到 LangGraph Platform：
+
+- [如何设置应用以进行部署（requirements.txt）](/langgraphjs/cloud/deployment/setup)
+- [如何设置应用以进行部署（pyproject.toml）](/langgraphjs/cloud/deployment/setup_pyproject)
+- [如何设置应用以进行部署（JavaScript）](/langgraphjs/cloud/deployment/setup_javascript)
+- [如何自定义 Dockerfile](/langgraphjs/cloud/deployment/custom_docker)
+- [如何在本地测试](/langgraphjs/cloud/deployment/test_locally)
+- [如何将 LangGraph 集成到你的 React 应用中](/langgraphjs/cloud/how-tos/use_stream_react)
+
+### 部署
+
+LangGraph 应用可以使用 LangGraph Cloud 进行部署，它提供了一系列服务来帮助你部署、管理和扩展你的应用。
+
+- [如何部署到 LangGraph Cloud](/langgraphjs/cloud/deployment/cloud)
+- [如何部署到自托管环境](./deploy-self-hosted.md)
+- [如何使用 RemoteGraph 与部署交互](./use-remote-graph.md)
+
+### 认证与访问控制
+
+- [如何添加自定义认证](./auth/custom_auth.md)
+
+### 修改 API
+
+- [如何添加自定义路由](./http/custom_routes.md)
+- [如何添加自定义中间件](./http/custom_middleware.md)
+
+### Assistants
+
+[Assistants](../concepts/assistants.md) 是模板的配置实例。
+
+- [如何配置代理](/langgraphjs/cloud/how-tos/configuration_cloud)
+- [如何对 assistants 进行版本控制](/langgraphjs/cloud/how-tos/assistant_versioning)
+
+### 线程
+
+- [如何复制线程](/langgraphjs/cloud/how-tos/copy_threads)
+- [如何检查线程状态](/langgraphjs/cloud/how-tos/check_thread_status)
+
+### 运行
+
+LangGraph Cloud 除了支持流式运行外，还支持多种类型的运行。
+
+- [如何在后台运行代理](/langgraphjs/cloud/how-tos/background_run)
+- [如何在同一线程中运行多个代理](/langgraphjs/cloud/how-tos/same-thread)
+- [如何创建定时任务](/langgraphjs/cloud/how-tos/cron_jobs)
+- [如何创建无状态运行](/langgraphjs/cloud/how-tos/stateless_runs)
+
+### 流式处理
+
+流式传输你的 LLM 应用的结果对于确保良好的用户体验至关重要，特别是当你的图可能调用多个模型并需要很长时间才能完成一次运行时。在这些操作指南中，了解如何从图中流式传输值：
+
+- [如何流式传输值](/langgraphjs/cloud/how-tos/stream_values)
+- [如何流式传输更新](/langgraphjs/cloud/how-tos/stream_updates)
+- [如何流式传输消息](/langgraphjs/cloud/how-tos/stream_messages)
+- [如何流式传输事件](/langgraphjs/cloud/how-tos/stream_events)
+- [如何在调试模式下流式传输](/langgraphjs/cloud/how-tos/stream_debug)
+- [如何流式传输多种模式](/langgraphjs/cloud/how-tos/stream_multiple)
+
+### 前端与生成式 UI
+
+借助 LangGraph Platform，你可以将 LangGraph 代理集成到你的 React 应用中，并将 UI 组件与代理代码放在同一位置。
+
+- [如何将 LangGraph 集成到你的 React 应用中](/langgraphjs/cloud/how-tos/use_stream_react)
+- [如何使用 LangGraph 实现生成式用户界面](/langgraphjs/cloud/how-tos/generative_ui_react)
+
+### Human-in-the-loop
+
+在创建复杂的图时，让每个决定都由 LLM 做出可能是危险的，特别是当这些决定涉及调用某些工具或访问特定文档时。为了解决这个问题，LangGraph 允许你插入 human-in-the-loop 行为，以确保你的图不会产生不必要的结果。在这些操作指南中，详细了解你可以将 human-in-the-loop 功能添加到 LangGraph Cloud 项目的不同方式：
+
+- [如何添加断点](/langgraphjs/cloud/how-tos/human_in_the_loop_breakpoint)
+- [如何等待用户输入](/langgraphjs/cloud/how-tos/human_in_the_loop_user_input)
+- [如何编辑图状态](/langgraphjs/cloud/how-tos/human_in_the_loop_edit_state)
+- [如何从先前状态重放和分支](/langgraphjs/cloud/how-tos/human_in_the_loop_time_travel)
+- [如何审查工具调用](/langgraphjs/cloud/how-tos/human_in_the_loop_review_tool_calls)
+
+### 重复输入（Double-texting）
+
+图执行可能需要一段时间，有时用户可能在原始输入完成运行之前改变主意，想要发送不同的输入。例如，用户可能会注意到原始请求中有拼写错误，并会编辑提示词重新发送。在这些情况下，决定做什么对于确保流畅的用户体验并防止你的图以意想不到的方式运行非常重要。以下操作指南提供了有关 LangGraph Cloud 为你提供的处理重复输入的各种选项的信息：
+
+- [如何使用中断选项](/langgraphjs/cloud/how-tos/interrupt_concurrent)
+- [如何使用回滚选项](/langgraphjs/cloud/how-tos/rollback_concurrent)
+- [如何使用拒绝选项](/langgraphjs/cloud/how-tos/reject_concurrent)
+- [如何使用排队选项](/langgraphjs/cloud/how-tos/enqueue_concurrent)
+
+### Webhooks
+
+- [如何集成 webhooks](/langgraphjs/cloud/how-tos/webhooks)
+
+### 定时任务
+
+- [如何创建定时任务](/langgraphjs/cloud/how-tos/cron_jobs)
+
+### LangGraph Studio
+
+LangGraph Studio 是一个用于可视化、测试和调试代理的内置 UI。
+
+- [如何连接到 LangGraph Cloud 部署](/langgraphjs/cloud/how-tos/test_deployment)
+- [如何连接到本地部署](/langgraphjs/cloud/how-tos/test_local_deployment)
+- [如何在 LangGraph Studio 中测试你的图](/langgraphjs/cloud/how-tos/invoke_studio)
+- [如何在 LangGraph Studio 中与线程交互](/langgraphjs/cloud/how-tos/threads_studio)
+
+## 故障排除
+
+这些是用于解决你在使用 LangGraph 构建时可能遇到的常见错误的指南。下面引用的错误在代码中抛出时将具有相应的 `lc_error_code` 属性。
+
+- [GRAPH_RECURSION_LIMIT](../troubleshooting/errors/GRAPH_RECURSION_LIMIT.ipynb)
+- [INVALID_CONCURRENT_GRAPH_UPDATE](../troubleshooting/errors/INVALID_CONCURRENT_GRAPH_UPDATE.ipynb)
+- [INVALID_GRAPH_NODE_RETURN_VALUE](../troubleshooting/errors/INVALID_GRAPH_NODE_RETURN_VALUE.ipynb)
+- [MULTIPLE_SUBGRAPHS](../troubleshooting/errors/MULTIPLE_SUBGRAPHS.ipynb)
+- [UNREACHABLE_NODE](../troubleshooting/errors/UNREACHABLE_NODE.ipynb)
