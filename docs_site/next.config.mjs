@@ -2,13 +2,14 @@ import { createMDX } from 'fumadocs-mdx/next'
 
 const withMDX = createMDX()
 
+const isVercel = Boolean(process.env.VERCEL)
+
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
-  // 仅生产构建时静态导出，开发时关闭以避免 generateStaticParams 在 dev 下报错
-  ...(process.env.NODE_ENV === 'production' && { output: 'export' }),
-  distDir: 'dist',
-  // 部署到 Vercel、base path 为 / 时无需 assetPrefix
+  // Vercel 用标准 Next 构建（.next），否则用静态导出到 dist（如本地 preview / GitHub Pages）
+  ...(!isVercel && process.env.NODE_ENV === 'production' && { output: 'export' }),
+  ...(isVercel ? {} : { distDir: 'dist' }),
   images: {
     unoptimized: true,
   },
