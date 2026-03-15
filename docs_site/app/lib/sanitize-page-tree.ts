@@ -44,6 +44,6 @@ export function sanitizePageTree(root: PageTree.Root): PageTree.Root {
     ...root,
     children: r.children.map((node) =>
       sanitizeNode(node as TreeLike)
-    ) as PageTree.Root["children"],
+    ) as unknown as PageTree.Root["children"],
   };
 }

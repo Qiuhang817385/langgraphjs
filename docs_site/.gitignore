@@ -34,3 +34,5 @@ tsconfig.vitest-temp.json
 .vitest-attachments
 agent-os/
 __screenshots__
+./.next
+.next
